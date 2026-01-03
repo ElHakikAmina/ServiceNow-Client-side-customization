@@ -1,0 +1,33 @@
+function onChange(control, oldValue, newValue, isLoading) {
+  if (isLoading) return;
+
+  // إذا كان الفورم جديد ومازال ما كايناش قيمة
+  if (newValue == oldValue) return;
+
+  // 1) نفرّغ Subcategory ونحطّ خيار افتراضي
+  g_form.clearOptions('u_subcategory');
+  g_form.addOption('u_subcategory', '', '-- Select --');
+
+  // إذا Category فارغة، نحبسو هنا
+  if (!newValue) return;
+
+  // 2) نستدعي Script Include عبر GlideAjax
+  var ga = new GlideAjax('x_app_SubcategoryAjax'); // اسم الـ Script Include
+  ga.addParam('sysparm_name', 'getSubcategories'); // اسم الدالة داخل Script Include
+  ga.addParam('sysparm_category', newValue);       // نرسل sys_id ديال Category
+
+  // 3) نستقبل جواب السيرفر (String) ونحوّلو ل JSON
+  ga.getXMLAnswer(function(answer) {
+    try {
+      // متوقع: [{"value":"sys_id","label":"Subcat name"}, ...]
+      var list = JSON.parse(answer || '[]');
+
+      list.forEach(function(item) {
+        g_form.addOption('u_subcategory', item.value, item.label);
+      });
+    } catch (e) {
+      console.log('Error parsing subcategories:', e, answer);
+      g_form.addErrorMessage('مشكل فتحميل Subcategories. جرّب تعاود.');
+    }
+  });
+}
